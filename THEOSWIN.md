@@ -56,3 +56,10 @@ anti-detection no) + a from-source build recipe: [`docs/DarkClang.md`](docs/Dark
 Only **one** Windows-host iOS toolchain exists publicly (Leeksov's LLVM 19).
 L1ghtmann's other releases are Linux/macOS. A second Windows clang would need a
 from-source build (see `docs/DarkClang.md`). So TheosWin stays on LLVM 19.
+
+**Pinned toolchain (reproducibility):** the base `install.sh` pulls the toolchain
+from Leeksov's `latest`, which could change if they publish a newer LLVM. For a
+byte-for-byte reproducible setup, the exact LLVM 19 is mirrored on the
+[`toolchain-v1`](../../releases/tag/toolchain-v1) release — install it with
+[`tools/install-toolchain.sh`](tools/install-toolchain.sh) (or `setup-extras.sh
+--toolchain`). Then a fresh machine matches your current setup precisely.

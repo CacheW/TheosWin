@@ -14,7 +14,14 @@ A Swift function compiled entirely on Windows ran on both — `fib(20)=6765`,
 | Pure Swift (stdlib only) → arm64-iOS object | ✅ compiles + runs on device |
 | Swift `@_cdecl` C-ABI functions called from ObjC/C | ✅ the usable pattern |
 | Link ObjC + Swift → app/dylib, Swift runtime from `/usr/lib/swift` | ✅ |
+| Modern stdlib: `async`/`await`, actors, `Task` | ✅ compiles (async since iOS 13) |
+| Swift `Regex` (type API, `_StringProcessing`) | ✅ compiles (needs iOS 16+ deploy or `if #available`) |
 | `import Foundation` / `import UIKit` **from Swift** | ❌ blocked |
+
+Note: `String`, `Array`/`Dictionary`/`Set`, generics, protocols, enums, error
+handling, closures, `Regex`, and `async`/`await` are all **stdlib** (not Foundation),
+so they work. `Data`/`Date`/`URL`/`URLSession`/`JSONEncoder`/`DateFormatter` are
+Foundation → blocked; do those in ObjC.
 
 **Why the `import` limit — tested to exhaustion, it's fundamental:** the iOS SDK
 ships every Swift module (core stdlib + each framework overlay) as a textual

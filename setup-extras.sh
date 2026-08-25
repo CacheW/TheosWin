@@ -11,25 +11,33 @@
 #   --sdks <all|16.5,18.6,26.5>  install pre-patched SDKs from the sdks-v1 release
 #   --swift                      download + silent-install swift.org 6.1.2 (Windows)
 #   --roothide                   add the RootHide package scheme
+#   --toolchain                  install the PINNED LLVM 19 (reproducibility; not in --all)
 #   --all                        = --sdks all --swift --roothide
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 : "${THEOS:=$HOME/.theos/theos}"
 
-DO_SDKS=""; DO_SWIFT=0; DO_ROOTHIDE=0
+DO_SDKS=""; DO_SWIFT=0; DO_ROOTHIDE=0; DO_TOOLCHAIN=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --all)      DO_SDKS="all"; DO_SWIFT=1; DO_ROOTHIDE=1 ;;
-    --sdks)     DO_SDKS="${2:-all}"; shift ;;
-    --swift)    DO_SWIFT=1 ;;
-    --roothide) DO_ROOTHIDE=1 ;;
-    -h|--help)  grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --all)       DO_SDKS="all"; DO_SWIFT=1; DO_ROOTHIDE=1 ;;
+    --sdks)      DO_SDKS="${2:-all}"; shift ;;
+    --swift)     DO_SWIFT=1 ;;
+    --roothide)  DO_ROOTHIDE=1 ;;
+    --toolchain) DO_TOOLCHAIN=1 ;;
+    -h|--help)   grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "setup-extras: unknown arg '$1' (see --help)"; exit 1 ;;
   esac
   shift
 done
-[ -z "$DO_SDKS$DO_SWIFT$DO_ROOTHIDE" ] && { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+[ -z "$DO_SDKS$DO_SWIFT$DO_ROOTHIDE" ] && [ "$DO_TOOLCHAIN" = 0 ] && { grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 [ -d "$THEOS/makefiles" ] || { echo "setup-extras: \$THEOS not found ($THEOS). Run install.sh first."; exit 1; }
+
+# ---- Pinned toolchain (reproducibility) ----
+if [ "$DO_TOOLCHAIN" = 1 ]; then
+  echo "== Pinned toolchain (LLVM 19) =="
+  bash "$HERE/tools/install-toolchain.sh"
+fi
 
 # ---- SDKs ----
 if [ -n "$DO_SDKS" ]; then
