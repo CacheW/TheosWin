@@ -1,78 +1,95 @@
-# Theos for Windows
+<div align="center">
 
-Build iOS tweaks natively on Windows. No WSL, no VM, no macOS required.
+# TheosWin
 
----
+**Build iOS tweaks, dylibs, and apps natively on Windows.**
+No WSL. No VM. No macOS.
 
-## 🛠️ TheosWin — this fork's additions (see [`THEOSWIN.md`](THEOSWIN.md))
+An improved fork of [Leeksov/theos-windows](https://github.com/Leeksov/theos-windows) —
+adding Swift, multi-SDK, RootHide, a pinned toolchain, and one-command setup.
 
-A private, improved fork of [Leeksov/theos-windows](https://github.com/Leeksov/theos-windows)
-(base installer unchanged; tag `upstream-baseline` for diffing).
-
-- **Swift on iOS — `.swift` cross-compiles** (upstream marks it ❌). Proven on real
-  devices (iOS 17.6.1 + 27.0). **Pure Swift + `@_cdecl` called from ObjC works and
-  runs on device.** Full `import UIKit`/`import Foundation` from Swift is **NOT
-  achievable** on native Windows — it needs Apple's own swiftc (Xcode/macOS); a
-  swift.org Windows swiftc can't consume Apple's SDK Swift interfaces (tested 6.1.2
-  & 6.3.3 vs SDK 16.5 & 18.6 — all fail at the Apple-vs-swift.org version wall).
-  Full write-up + recipe: [`docs/Swift.md`](docs/Swift.md), wrapper
-  [`tools/swiftc-ios`](tools/swiftc-ios), working example
-  [`examples/swift-demo/`](examples/swift-demo/).
-- **RootHide jailbreak scheme** — build tweaks for RootHide devices:
-  [`tools/add-roothide.sh`](tools/add-roothide.sh) → `make THEOS_PACKAGE_SCHEME=roothide`.
-  Additive port of [roothide/theos](https://github.com/roothide/theos) that keeps the
-  Windows patches intact.
-- **Multi-SDK** — `tools/add-sdk.py` materializes any community-mirror iOS SDK for
-  Windows (resolves framework symlinks via git metadata). Pre-patched **iOS 18.6 +
-  26.5** on the [`sdks-v1`](../../releases/tag/sdks-v1) release. Drop into
-  `$THEOS/sdks/`, target with `TARGET = iphone:clang:26.5:14.5`. 16.5 stays default.
-- **DarkClang** — honest analysis of a custom obfuscating clang (anti-theft yes,
-  anti-detection no) + from-source recipe: [`docs/DarkClang.md`](docs/DarkClang.md).
-- **Clang reality:** only one Windows-host iOS toolchain exists (LLVM 19); a second
-  would need a from-source build. TheosWin stays on LLVM 19.
-
-> **What can't be ported from Xcode (fundamental):** the iOS Simulator, Apple's
-> swiftc, `actool`/`ibtool`/`metal` — all closed and macOS-only. TheosWin covers
-> the **build → link → sign → package** pipeline for C/ObjC/C++ (and Swift logic),
-> which is 100% of what tweaks and code-driven apps need.
+</div>
 
 ---
 
-## Install
+## Why TheosWin
 
-Everything downloads automatically from GitHub. Nothing to build.
+[Theos](https://github.com/theos/theos) is the standard build system for iOS
+tweaks, but running it on Windows normally means WSL or a Mac. Leeksov solved the
+native-Windows base (a real LLVM/clang cross-compiler + linker + SDK). **TheosWin
+builds on that** and closes the remaining gaps so a Windows box is a first-class
+iOS build environment — reproducible, multi-SDK, Swift-capable, and RootHide-ready.
 
-### Option 1: PowerShell (recommended, auto-installs Git if needed)
+## Highlights
 
-```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr https://raw.githubusercontent.com/Leeksov/theos-windows/master/install.ps1 -OutFile i.ps1; .\i.ps1; del i.ps1"
-```
+| Capability | TheosWin |
+|---|:---:|
+| C / Objective-C / Objective-C++ → iOS | ✅ |
+| C++ → iOS | ✅ |
+| Logos `.x` / `.xm` | ✅ |
+| **Swift** (logic via `@_cdecl`) → iOS | ✅ *(new)* |
+| **Multi-SDK** — iOS 16.5 / 18.6 / 26.5, one command | ✅ *(new)* |
+| **RootHide** jailbreak package scheme | ✅ *(new)* |
+| **Pinned toolchain** for reproducible builds | ✅ *(new)* |
+| One-command extras installer | ✅ *(new)* |
+| Link · code-sign (ldid) · package `.deb`/`.ipa` | ✅ |
 
-### Option 2: Git Bash (if you already have Git)
+> Proven end-to-end: a Swift-powered app built entirely on Windows and run on real
+> devices (iOS 17.6.1 iPad + iOS 27.0 iPhone). See [`examples/swift-demo/`](examples/swift-demo/).
+
+---
+
+## Quick start
+
+**Prerequisites:** [Git for Windows](https://git-scm.com/download/win),
+[Python 3](https://python.org) (`pip install zstandard`). A terminal (Git Bash,
+PowerShell, or cmd).
+
+### Install
+
+Clone this repo and run the installer (works in Git Bash):
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Leeksov/theos-windows/master/install.sh)
+git clone https://github.com/CacheW/TheosWin.git
+cd TheosWin
+bash install.sh
 ```
 
-### Prerequisites
-- [Python 3](https://python.org) + `pip install zstandard`
-- Git for Windows — installed automatically if missing
+Then add the extras you want (see below). Installs to `~/.theos`
+(`%USERPROFILE%\.theos`). **Restart your terminal after installing.**
 
-Installs to `~/.theos` (`%USERPROFILE%\.theos`). Restart terminal after install.
+> The vanilla base can also be installed via the upstream one-liner
+> (`install.ps1` / `install.sh` from Leeksov) — TheosWin's extras layer on top.
+
+### Extras — one command
+
+```bash
+bash setup-extras.sh --all          # SDKs + Swift toolchain + RootHide
+# …or pick pieces:
+bash setup-extras.sh --sdks all     # iOS 16.5 + 18.6 + 26.5
+bash setup-extras.sh --swift        # swift.org toolchain (Swift logic → iOS)
+bash setup-extras.sh --roothide     # RootHide package scheme
+bash setup-extras.sh --toolchain    # pinned LLVM 19 (byte-identical, reproducible)
+```
+
+---
 
 ## Usage
 
-### Create a tweak
+### Create and build a tweak
 
 ```bash
-$THEOS/bin/nic.pl
+$THEOS/bin/nic.pl        # scaffold a new project
+make                     # compile
+make package             # compile + .deb (→ ./packages/)
+make clean
 ```
 
-### Makefile
+Minimal `Makefile`:
 
 ```makefile
 ARCHS = arm64
-TARGET = iphone:16.5:15.0
+TARGET = iphone:clang:16.5:14.5      # SDK : min-deployment
 
 include $(THEOS)/makefiles/common.mk
 
@@ -83,72 +100,144 @@ MyTweak_CFLAGS = -fobjc-arc
 include $(THEOS_MAKE_PATH)/tweak.mk
 ```
 
-### Build
+### Target a specific SDK
+
+Install the SDKs, then choose per project via `TARGET`:
 
 ```bash
-make              # compile only
-make package      # compile + .deb
-make clean        # clean
+bash tools/install-sdks.sh all      # or: 18.6 26.5
+```
+```makefile
+TARGET = iphone:clang:18.6:14.5     # 16.5 is the safe default
 ```
 
-`.deb` goes to `./packages/`.
+### RootHide tweak
 
-## What Gets Installed
+```bash
+bash tools/add-roothide.sh
+make THEOS_PACKAGE_SCHEME=roothide
+```
+
+### Swift (logic) → iOS
+
+Write pure Swift logic, expose it with `@_cdecl`, call it from ObjC:
+
+```swift
+// logic.swift
+@_cdecl("aim_smooth")
+public func aim_smooth(_ cur: Float, _ tgt: Float, _ speed: Float) -> Float {
+    cur + (tgt - cur) * min(max(speed, 0), 1)
+}
+```
+```bash
+tools/swiftc-ios -O -emit-object logic.swift -o logic.o   # → arm64-ios object
+```
+
+Full recipe, working example, and the honest limits: [`docs/Swift.md`](docs/Swift.md).
+
+---
+
+## Capabilities & honest limits
+
+**Swift** cross-compiles for iOS on Windows — the full language and standard
+library (`String`, collections, generics, protocols, error handling, **`async`/`await`**,
+**`Regex`**). The working pattern is **Swift logic + `@_cdecl`, with UI/frameworks in
+ObjC**. `import UIKit` / `import Foundation` **from Swift** is not achievable on
+Windows — those overlays require Apple's own swiftc (Xcode/macOS only). Details and
+the full test matrix are in [`docs/Swift.md`](docs/Swift.md).
+
+**What no tool can port from Xcode to Windows** (all closed, macOS-only): the iOS
+Simulator, Apple's swiftc, and `actool` / `ibtool` / `metal`. TheosWin covers the
+**build → link → sign → package** pipeline for C/ObjC/C++ and Swift logic — 100% of
+what tweaks and code-driven apps need.
+
+**Toolchain:** one Windows-host iOS toolchain exists publicly (LLVM 19). A second /
+custom clang would require a from-source build — analysis in
+[`docs/DarkClang.md`](docs/DarkClang.md).
+
+---
+
+## Repository layout
+
+```
+install.sh / .ps1 / .bat   base installer (native Windows Theos)
+setup-extras.sh            one-command extras (SDKs / Swift / RootHide / toolchain)
+tools/
+  install-sdks.sh          install pre-patched iOS SDKs from the sdks-v1 release
+  install-toolchain.sh     install the pinned LLVM 19 (reproducibility)
+  add-sdk.py               materialize any mirror iOS SDK for Windows
+  add-roothide.sh          add the RootHide package scheme
+  swiftc-ios               Swift → arm64-ios cross-compile wrapper
+roothide-support/          RootHide package-scheme module
+examples/swift-demo/       ObjC UI + Swift logic → installable .ipa
+docs/Swift.md              Swift on iOS: recipe, capabilities, limits
+docs/DarkClang.md          custom obfuscating clang: analysis + recipe
+THEOSWIN.md                improvements-over-upstream index
+```
+
+**Releases:** `sdks-v1` (iOS 16.5 + 18.6 + 26.5, Windows-patched) ·
+`toolchain-v1` (pinned LLVM 19).
+
+---
+
+## What gets installed
 
 | Component | Size | Source |
-|-----------|------|--------|
-| Clang/LLD cross-compiler | ~150 MB | Pre-built from [L1ghtmann/llvm-project](https://github.com/L1ghtmann/llvm-project) (Apple fork) |
-| GNU Make (MSYS2) | ~1 MB | Pre-built |
-| ldid (code signing) | ~1 MB | Built from [ProcursusTeam/ldid](https://github.com/ProcursusTeam/ldid) |
-| Theos | ~50 MB | Cloned from [theos/theos](https://github.com/theos/theos) |
-| iOS SDK | ~70 MB | Downloaded by Theos |
-| Strawberry Perl | ~290 MB | Downloaded from [strawberryperl.com](https://strawberryperl.com) (needed for Logos `.x` files) |
-| Tool stubs | ~5 KB | fakeroot, dpkg-deb, rsync replacements |
+|---|---|---|
+| Clang / LLD cross-compiler (LLVM 19) | ~150 MB | [L1ghtmann/llvm-project](https://github.com/L1ghtmann/llvm-project) (Apple fork) |
+| Theos | ~50 MB | [theos/theos](https://github.com/theos/theos) |
+| iOS SDK(s) | ~70 MB ea. | Windows-patched, hosted on this repo's `sdks-v1` |
+| ldid (code signing) | ~1 MB | [ProcursusTeam/ldid](https://github.com/ProcursusTeam/ldid) |
+| Strawberry Perl (Logos `.x`) | ~290 MB | [strawberryperl.com](https://strawberryperl.com) |
+| Swift toolchain *(optional)* | ~540 MB | [swift.org](https://www.swift.org/install/windows/) |
 
-## Supported File Types
+## Supported file types
 
 | Extension | Type | Status |
-|-----------|------|--------|
-| `.m` | Objective-C | ✅ |
-| `.mm` | Objective-C++ | ✅ |
+|---|---|:---:|
+| `.m` / `.mm` | Objective-C / Objective-C++ | ✅ |
 | `.c` / `.cpp` | C / C++ | ✅ |
-| `.x` | Logos (ObjC) | ✅ |
-| `.xm` | Logos (ObjC++) | ✅ |
-| `.swift` | Swift | ❌ No cross-compiler |
+| `.x` / `.xm` | Logos (ObjC / ObjC++) | ✅ |
+| `.swift` | Swift (logic via `@_cdecl`; frameworks in ObjC) | ✅ *(see [docs/Swift.md](docs/Swift.md))* |
 
-## Important Notes
+## Notes
 
-- **No spaces in project path.** Use paths like `C:\dev\tweaks\MyTweak`
-- **Code signing** is disabled by default. Sign on-device or use ldid separately
-- **CydiaSubstrate** is a stub for linking — the real lib loads on-device
-- Uses MSYS2 make (not MSVC make) — required for bash-based Theos makefiles
+- **No spaces in the project path** (Theos limitation, all platforms). Use `C:\dev\MyTweak`.
+- Code signing is disabled by default — sign on-device, via ldid, or let ESign re-sign.
+- **CydiaSubstrate** is a link-time stub; the real library loads on-device.
+- Uses MSYS2 make (not MSVC make) — required for Theos's bash-based makefiles.
 
 ## Troubleshooting
 
 | Problem | Fix |
-|---------|-----|
-| `platform does not define a default target` | Use MSYS2 make: `make --version` → must say `x86_64-pc-msys` |
-| `stdarg.h not found` | Missing clang headers. Re-run installer |
-| Logos `.x` fails with `Can't locate...` | Perl issue. Run: `perl -e "use Locale::Maketext::Simple"` |
-| `does not support linking for platform iOS` | lld not patched. Re-download toolchain |
-| Path errors with `C:/Program Files/...` | Set `export MSYS2_ARG_CONV_EXCL="-install_name;-dylib_install_name;/Library"` |
+|---|---|
+| `platform does not define a default target` | Use MSYS2 make: `make --version` must say `x86_64-pc-msys` |
+| `stdarg.h not found` | Missing clang headers — re-run the installer |
+| Logos `.x` fails with `Can't locate…` | Perl issue: `perl -e "use Locale::Maketext::Simple"` |
+| `does not support linking for platform iOS` | lld not patched — re-install the toolchain |
+| Path errors with `C:/Program Files/…` | `export MSYS2_ARG_CONV_EXCL="-install_name;-dylib_install_name;/Library"` |
 
-## How It Works
+## How it works
 
-The installer downloads a pre-built LLVM/Clang cross-compiler (Apple fork with iOS support), patches lld's Mach-O linker to allow iOS linking on Windows, sets up Theos with Windows platform detection, and provides stub replacements for Unix-only tools.
+The installer sets up a pre-built LLVM/Clang cross-compiler (Apple fork with iOS
+support), patches lld's Mach-O linker to allow iOS linking on Windows, configures
+Theos with Windows platform detection, and stubs Unix-only tools. Key patches:
 
-Key patches:
-- **lld**: Removes Apple's "platform not supported" check in `InputFiles.cpp` that blocks iOS linking on non-macOS
-- **ld wrapper**: Translates `-iphoneos_version_min` to `-platform_version ios` (lld ld64 flavor requirement)
-- **Theos makefiles**: MINGW/MSYS → Windows platform mapping, ld64.lld linker path
+- **lld** — removes Apple's "platform not supported" check that blocks iOS linking off-macOS.
+- **ld wrapper** — maps `-iphoneos_version_min` → `-platform_version ios` (lld ld64 flavor).
+- **Theos makefiles** — MINGW/MSYS → Windows platform mapping + `ld64.lld` linker path.
 
 ## Credits
 
-- [Theos](https://github.com/theos/theos)
-- [L1ghtmann/llvm-project](https://github.com/L1ghtmann/llvm-project)
-- [ProcursusTeam/ldid](https://github.com/ProcursusTeam/ldid)
-- [Strawberry Perl](https://strawberryperl.com/)
+Built on the work of [Theos](https://github.com/theos/theos),
+[Leeksov/theos-windows](https://github.com/Leeksov/theos-windows),
+[L1ghtmann/llvm-project](https://github.com/L1ghtmann/llvm-project),
+[roothide/theos](https://github.com/roothide/theos),
+[xybp888/iOS-SDKs](https://github.com/xybp888/iOS-SDKs),
+[ProcursusTeam/ldid](https://github.com/ProcursusTeam/ldid), and
+[Strawberry Perl](https://strawberryperl.com/).
 
 ## License
 
-MIT (installer scripts). Components have their own licenses (LLVM: Apache 2.0, Theos: GPLv3, Perl: Artistic/GPL).
+Installer scripts: MIT. Bundled components keep their own licenses
+(LLVM: Apache-2.0 · Theos: GPLv3 · Perl: Artistic/GPL).
