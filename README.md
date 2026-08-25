@@ -18,6 +18,10 @@ A private, improved fork of [Leeksov/theos-windows](https://github.com/Leeksov/t
   Full write-up + recipe: [`docs/Swift.md`](docs/Swift.md), wrapper
   [`tools/swiftc-ios`](tools/swiftc-ios), working example
   [`examples/swift-demo/`](examples/swift-demo/).
+- **RootHide jailbreak scheme** — build tweaks for RootHide devices:
+  [`tools/add-roothide.sh`](tools/add-roothide.sh) → `make THEOS_PACKAGE_SCHEME=roothide`.
+  Additive port of [roothide/theos](https://github.com/roothide/theos) that keeps the
+  Windows patches intact.
 - **Multi-SDK** — `tools/add-sdk.py` materializes any community-mirror iOS SDK for
   Windows (resolves framework symlinks via git metadata). Pre-patched **iOS 18.6 +
   26.5** on the [`sdks-v1`](../../releases/tag/sdks-v1) release. Drop into
