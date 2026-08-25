@@ -2,6 +2,38 @@
 
 Build iOS tweaks natively on Windows. No WSL, no VM, no macOS required.
 
+---
+
+## 🛠️ TheosWin — this fork's additions (see [`THEOSWIN.md`](THEOSWIN.md))
+
+A private, improved fork of [Leeksov/theos-windows](https://github.com/Leeksov/theos-windows)
+(base installer unchanged; tag `upstream-baseline` for diffing).
+
+- **Swift on iOS — `.swift` cross-compiles** (upstream marks it ❌). Proven on real
+  devices (iOS 17.6.1 + 27.0). **Pure Swift + `@_cdecl` called from ObjC works and
+  runs on device.** Full `import UIKit`/`import Foundation` from Swift is **NOT
+  achievable** on native Windows — it needs Apple's own swiftc (Xcode/macOS); a
+  swift.org Windows swiftc can't consume Apple's SDK Swift interfaces (tested 6.1.2
+  & 6.3.3 vs SDK 16.5 & 18.6 — all fail at the Apple-vs-swift.org version wall).
+  Full write-up + recipe: [`docs/Swift.md`](docs/Swift.md), wrapper
+  [`tools/swiftc-ios`](tools/swiftc-ios), working example
+  [`examples/swift-demo/`](examples/swift-demo/).
+- **Multi-SDK** — `tools/add-sdk.py` materializes any community-mirror iOS SDK for
+  Windows (resolves framework symlinks via git metadata). Pre-patched **iOS 18.6 +
+  26.5** on the [`sdks-v1`](../../releases/tag/sdks-v1) release. Drop into
+  `$THEOS/sdks/`, target with `TARGET = iphone:clang:26.5:14.5`. 16.5 stays default.
+- **DarkClang** — honest analysis of a custom obfuscating clang (anti-theft yes,
+  anti-detection no) + from-source recipe: [`docs/DarkClang.md`](docs/DarkClang.md).
+- **Clang reality:** only one Windows-host iOS toolchain exists (LLVM 19); a second
+  would need a from-source build. TheosWin stays on LLVM 19.
+
+> **What can't be ported from Xcode (fundamental):** the iOS Simulator, Apple's
+> swiftc, `actool`/`ibtool`/`metal` — all closed and macOS-only. TheosWin covers
+> the **build → link → sign → package** pipeline for C/ObjC/C++ (and Swift logic),
+> which is 100% of what tweaks and code-driven apps need.
+
+---
+
 ## Install
 
 Everything downloads automatically from GitHub. Nothing to build.

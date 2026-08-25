@@ -16,12 +16,29 @@ A Swift function compiled entirely on Windows ran on both — `fib(20)=6765`,
 | Link ObjC + Swift → app/dylib, Swift runtime from `/usr/lib/swift` | ✅ |
 | `import Foundation` / `import UIKit` **from Swift** | ❌ blocked |
 
-**Why the `import` limit:** the iOS SDK ships each framework's Swift overlay as a
-textual `.swiftinterface` produced by **Apple's** swiftc (a private fork). A
-`swift.org` Windows swiftc rebuilds those interfaces and hits ABI/content
-mismatches (e.g. `no type named 'DispatchIO' in module 'Dispatch'` when Foundation
-pulls in Dispatch). This needs Apple's exact swiftc, which doesn't exist for
-Windows. It's an Apple-ABI wall, not a missing flag.
+**Why the `import` limit — tested to exhaustion, it's fundamental:** the iOS SDK
+ships every Swift module (core stdlib + each framework overlay) as a textual
+`.swiftinterface` produced by **Apple's** swiftc, which lives only in Xcode
+(macOS). A `swift.org` Windows swiftc cannot consume them. Matrix actually tried:
+
+| swiftc (swift.org, Windows) | SDK | Result on `import Foundation/UIKit` |
+|---|---|---|
+| 6.1.2 | 16.5 (Apple Swift 5.8) | ❌ `no type named 'DispatchIO' in module 'Dispatch'` (overlay ABI) |
+| 6.1.2 | 18.6 (Apple Swift 6.1.2) | ❌ `error extracting version from module interface` on core `Swift.swiftinterface` |
+| 6.3.3 | 18.6 (Apple Swift 6.1.2) | ❌ same — a *newer* swiftc still can't read it |
+
+The 18.6 interface header reads
+`// swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 …)`
+— that **Apple**-format version string is what swift.org's swiftc rejects. It is
+**not** a version-matching problem (6.3.3 > 6.1.2 and still fails); Apple's SDK
+Swift interfaces are gated to Apple's *internal* swiftc build. No Windows toolchain
+has that. (A per-SDK libxml2 modulemap dedup — three copies of `module libxml2`
+from symlink materialization — was a separate, fixable wall we cleared first; the
+version wall behind it is the fundamental one.)
+
+**Bottom line:** full `import UIKit`/`import Foundation` from Swift on native
+Windows is **not achievable** — it needs Apple's swiftc (Xcode/macOS). The usable
+ceiling is pure-Swift logic + ObjC for frameworks, bridged by `@_cdecl` (below).
 
 **The practical pattern:** write framework-touching code (UIKit/Foundation) in
 **ObjC/C++**, write pure logic in **Swift**, bridge with `@_cdecl`:
