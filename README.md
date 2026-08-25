@@ -152,8 +152,7 @@ Simulator, Apple's swiftc, and `actool` / `ibtool` / `metal`. TheosWin covers th
 what tweaks and code-driven apps need.
 
 **Toolchain:** one Windows-host iOS toolchain exists publicly (LLVM 19). A second /
-custom clang would require a from-source build — analysis in
-[`docs/DarkClang.md`](docs/DarkClang.md).
+custom clang would require a from-source build.
 
 ---
 
@@ -171,7 +170,6 @@ tools/
 roothide-support/          RootHide package-scheme module
 examples/swift-demo/       ObjC UI + Swift logic → installable .ipa
 docs/Swift.md              Swift on iOS: recipe, capabilities, limits
-docs/DarkClang.md          custom obfuscating clang: analysis + recipe
 THEOSWIN.md                improvements-over-upstream index
 ```
 
@@ -226,6 +224,11 @@ Theos with Windows platform detection, and stubs Unix-only tools. Key patches:
 - **lld** — removes Apple's "platform not supported" check that blocks iOS linking off-macOS.
 - **ld wrapper** — maps `-iphoneos_version_min` → `-platform_version ios` (lld ld64 flavor).
 - **Theos makefiles** — MINGW/MSYS → Windows platform mapping + `ld64.lld` linker path.
+
+## Contact
+
+Questions, ideas, or want to collaborate? Reach out on Telegram:
+**[@DarkLunaios](https://t.me/DarkLunaios)**
 
 ## Credits
 
