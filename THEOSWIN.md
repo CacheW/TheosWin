@@ -29,13 +29,16 @@ overlay that does **not** disturb the Windows patches (roothide only adds
   fine; final `.deb` packaging has the usual Theos-on-Windows dpkg-deb-stub limit.
   Needs a RootHide device to verify end-to-end.
 
-### 3. Multi-SDK (incl. iOS 18.6 and 26.5)
-Upstream ships one SDK (16.5). `tools/add-sdk.py` materializes any community-mirror
-iOS SDK for Windows (resolves framework symlinks via git metadata). Pre-patched
-SDKs are on the **`sdks-v1`** release:
-- `iPhoneOS26.5-windows.sdk.tar.gz`, `iPhoneOS18.6-windows.sdk.tar.gz`
-- Install: drop into `$THEOS/sdks/`, then `TARGET = iphone:clang:26.5:14.5` (etc.)
-- 16.5 stays the default; the newer ones are opt-in per project.
+### 3. Multi-SDK (16.5 + 18.6 + 26.5), self-contained
+Upstream ships one SDK (16.5). All three are now pre-patched (Windows framework
+symlinks materialized) and hosted on TheosWin's own **`sdks-v1`** release, so the
+setup no longer depends on any other repo.
+- **One-command install:** [`tools/install-sdks.sh`](tools/install-sdks.sh)
+  `[16.5|18.6|26.5|all]` → downloads from `sdks-v1` into `$THEOS/sdks/`.
+- Make another version yourself from any mirror: [`tools/add-sdk.py`](tools/add-sdk.py)
+  (resolves framework symlinks via git metadata).
+- Select per project: `TARGET = iphone:clang:26.5:14.5` (etc.). 16.5 is the safe
+  default; newer ones are opt-in per project.
 
 ### 4. DarkClang analysis (custom obfuscating clang)
 Honest write-up of what a custom LLVM fork can/can't do (anti-theft yes,
