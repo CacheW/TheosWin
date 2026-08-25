@@ -4,6 +4,14 @@ A private, improved fork of [Leeksov/theos-windows](https://github.com/Leeksov/t
 The base installer is unchanged (tag `upstream-baseline` for diffing); everything
 below is additive.
 
+## One-command extras
+
+After the base `install.sh`, add everything with:
+```bash
+bash setup-extras.sh --all          # multi-SDK + Swift toolchain + RootHide
+bash setup-extras.sh --sdks all     # or pick pieces: --sdks 18.6,26.5 --roothide --swift
+```
+
 ## What's added
 
 ### 1. Swift on iOS — `.swift` cross-compiles (upstream marks it ❌)
