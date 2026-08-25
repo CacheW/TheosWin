@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# swiftc-ios — cross-compile Swift to arm64-apple-ios on NATIVE WINDOWS Theos.
+# Discovered working recipe (see docs/Swift.md). Pure-Swift + @_cdecl only:
+# import Foundation/UIKit from Swift is blocked by the swift.org<->Apple overlay
+# ABI mismatch — write framework-touching code in ObjC, logic in Swift.
+#
+# Usage:  swiftc-ios [-o out.o] file.swift [extra swiftc args...]
+# Env:    SWIFT_ROOT (default ~/AppData/Local/Programs/Swift)
+#         SDK        (default $THEOS/sdks/iPhoneOS16.5.sdk)
+#         IOS_TARGET (default arm64-apple-ios14.5)
+set -e
+SWIFT_ROOT="${SWIFT_ROOT:-$HOME/AppData/Local/Programs/Swift}"
+SWIFTC="$(find "$SWIFT_ROOT/Toolchains" -iname swiftc.exe 2>/dev/null | sort | tail -1)"
+[ -x "$SWIFTC" ] || { echo "swiftc-ios: swiftc.exe not found under $SWIFT_ROOT (install swift.org toolchain)"; exit 1; }
+RTBIN="$(dirname "$(find "$SWIFT_ROOT/Runtimes" -iname swiftCore.dll 2>/dev/null | sort | tail -1)")"
+export PATH="$(dirname "$SWIFTC"):$RTBIN:$PATH"     # runtime DLLs must be on PATH
+SDK="${SDK:-$THEOS/sdks/iPhoneOS16.5.sdk}"
+IOS_TARGET="${IOS_TARGET:-arm64-apple-ios14.5}"
+SDK_WIN="$(cygpath -w "$SDK" 2>/dev/null || echo "$SDK")"
+exec "$SWIFTC" -target "$IOS_TARGET" -sdk "$SDK_WIN" \
+     -parse-as-library -runtime-compatibility-version none \
+     -Xfrontend -disable-autolinking-runtime-compatibility \
+     -Xfrontend -disable-autolinking-runtime-compatibility-dynamic-replacements \
+     "$@"
